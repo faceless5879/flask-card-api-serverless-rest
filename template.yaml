@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >-
+  flask-card-api
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+
+Resources:
+  FlaskCardApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: openapi.yaml
+      Auth:
+        ApiKeyRequired: false
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          Description: Usage plan for this API
+          Tags:
+            - Key: api-name
+              Value: flask-card
+  ApiGatewayPushToCloudWatchRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Description: "Push logs to CloudWatch logs from API Gateway"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "apigateway.amazonaws.com"
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+
+  ApiAccount:
+    Type: "AWS::ApiGateway::Account"
+    Properties:
+      CloudWatchRoleArn: !GetAtt ApiGatewayPushToCloudWatchRole.Arn
+  ApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/api-gateway/${AWS::StackName}"
+
+  FlaskCard:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.default
+      CodeUri: functions/flaskcard/dist
+      Runtime: nodejs16.x
+      MemorySize: 1024
+      # Policies:
+      #   # Give Create/Read/Update/Delete Permissions to the SampleTable
+      #   - DynamoDBCrudPolicy:
+      #       TableName: !Ref SampleTable
+      Events:
+        ProxyApiGreedy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref FlaskCardApi
+            Path: /{proxy+}
+            Method: ANY
+
+  # SampleTable:
+  #   Type: AWS::Serverless::SimpleTable
+  #   Properties:
+  #     PrimaryKey:
+  #       Name: id
+  #       Type: String
+  #     ProvisionedThroughput:
+  #       ReadCapacityUnits: 2
+  #       WriteCapacityUnits: 2
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${FlaskCardApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}"

@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "target": "ES2019",
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@config/*": ["src/Configs/*"],
+      "@controllers": ["src/Controllers/index"],
+      "@controllers/*": ["src/Controllers/*"],
+      "@interfaces": ["src/Interfaces/index"],
+      "@interfaces/*": ["src/Interfaces/*"],
+      "@routes": ["src/Routes/index"],
+      "@routes/*": ["src/Routes/*"],
+      "@app": ["src/app"]
+    },
+    "resolveJsonModule": true
+  },
+  "include": ["./**/*"]
+}

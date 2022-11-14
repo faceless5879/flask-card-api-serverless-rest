@@ -1,0 +1,24 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.7
+      nodejs: 14
+    commands:
+      - pip install cfn-lint
+      - pip install aws-sam-cli --user
+  build:
+    commands:
+      #- cfn-lint -t template.yaml
+      - cd $CODEBUILD_SRC_DIR/functions/flaskcard
+      - npm install
+      - npm run test
+      - npm run build:prod
+      - cd $CODEBUILD_SRC_DIR
+      - sam build
+      #- aws cloudformation package --template-file template.yaml --s3-bucket $PACKAGE_BUCKET --output-template-file packaged-template.yaml
+      - sam deploy --capabilities CAPABILITY_NAMED_IAM --s3-bucket $PACKAGE_BUCKET --force-upload --region $AWS_REGION --stack-name fhir-connector-$STAGE --parameter-overrides Stage=$STAGE
+#artifacts:
+#  files:
+#    - packaged-template.yaml

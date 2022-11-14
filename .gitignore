@@ -1,0 +1,10 @@
+samconfig.toml
+.aws-sam
+.scannerwork
+**/*.pem
+**/.env
+**/node_modules
+**/dist
+**/package-lock.json
+
+packaged-template.yaml

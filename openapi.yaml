@@ -1,0 +1,122 @@
+openapi: 3.0.2
+info:
+  title:
+    Fn::Sub: "${Stage}-flask-card"
+  description: Flask card
+  version: 1.0.0
+paths:
+  /:
+    get:
+      tags:
+        - default
+      summary: default
+      description: default
+      operationId: default
+      responses:
+        200:
+          $ref: "#/components/responses/CardGet"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        500:
+          $ref: "#/components/responses/500"
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FlaskCard.Arn}/invocations
+        httpMethod: POST
+        type: lambda
+  /card:
+    get:
+      tags:
+        - card
+      summary: GetCard
+      description: Get card info
+      operationId: GetCard
+      responses:
+        200:
+          $ref: "#/components/responses/CardGet"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        500:
+          $ref: "#/components/responses/500"
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FlaskCard.Arn}/invocations
+        httpMethod: POST
+        type: lambda
+components:
+  schemas:
+    integer:
+      pattern: ^-?([0]|([1-9][0-9]*))$
+      type: integer
+      example: 1234
+    string:
+      pattern: ^[ \r\n\t\S]+$
+      type: string
+      example: "This is a string"
+    uri:
+      pattern: ^\S*$
+      type: string
+      example: "news:comp.infosystems.www.servers.unix"
+    Error:
+      description: Error response schema
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+    CardResponse:
+      description: Card response schema
+      properties:
+        resourceType:
+          type: string
+      additionalProperties: false
+  responses:
+    CardGet:
+      description: GetCard response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CardResponse"
+    400:
+      description: BadRequest
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    401:
+      description: Unauthorized
+      headers:
+        X-API-KEY:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    404:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    409:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    500:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
