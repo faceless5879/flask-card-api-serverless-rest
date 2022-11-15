@@ -19,13 +19,14 @@ Resources:
           Parameters:
             Location: openapi.yaml
       Auth:
-        ApiKeyRequired: false
+        ApiKeyRequired: true
         UsagePlan:
           CreateUsagePlan: PER_API
           Description: Usage plan for this API
           Tags:
             - Key: api-name
               Value: flask-card
+
   ApiGatewayPushToCloudWatchRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -45,6 +46,7 @@ Resources:
     Type: "AWS::ApiGateway::Account"
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayPushToCloudWatchRole.Arn
+
   ApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -68,6 +70,62 @@ Resources:
             RestApiId: !Ref FlaskCardApi
             Path: /{proxy+}
             Method: ANY
+            Auth:
+              ApiKeyRequired: true
+
+  GetApiKeyLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+
+  GetApiKeyValueFunc:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: >
+          const AWS = require("aws-sdk");
+          const response = require("cfn-response");
+
+          exports.handler = (event, context) => {
+            const apiGateway = new AWS.APIGateway();
+            apiGateway.getApiKey(
+              {
+                apiKey: event.ResourceProperties.ApiKeyId,
+                includeValue: true
+              },
+              function (err, ApiKeyData) {
+                if (err) {
+                  console.log(err, err.stack);
+                  response.send(event, context, response.FAILED, {});
+                } else {
+                  response.send(event, context, response.SUCCESS, {
+                    Value: ApiKeyData.value
+                  });
+                }
+              }
+            );
+          };
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Timeout: 30
+      Role: !GetAtt GetApiKeyLambdaExecutionRole.Arn
+
+  GetApiKeyValue:
+    Type: Custom::GetApiKeyValue
+    Properties:
+      ServiceToken: !GetAtt GetApiKeyValueFunc.Arn
+      ApiKeyId: !Ref FlaskCardApiApiKey
 
   # SampleTable:
   #   Type: AWS::Serverless::SimpleTable
@@ -83,3 +141,5 @@ Outputs:
   WebEndpoint:
     Description: "API Gateway endpoint URL for Prod stage"
     Value: !Sub "https://${FlaskCardApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}"
+  RestApiKey:
+    Value: !GetAtt GetApiKeyValue.Value

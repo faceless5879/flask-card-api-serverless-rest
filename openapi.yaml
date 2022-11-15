@@ -5,27 +5,6 @@ info:
   description: Flask card
   version: 1.0.0
 paths:
-  /:
-    get:
-      tags:
-        - default
-      summary: default
-      description: default
-      operationId: default
-      responses:
-        200:
-          $ref: "#/components/responses/CardGet"
-        401:
-          $ref: "#/components/responses/401"
-        404:
-          $ref: "#/components/responses/404"
-        500:
-          $ref: "#/components/responses/500"
-      x-amazon-apigateway-integration:
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FlaskCard.Arn}/invocations
-        httpMethod: POST
-        type: lambda
   /card:
     get:
       tags:
@@ -46,7 +25,8 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FlaskCard.Arn}/invocations
         httpMethod: POST
-        type: lambda
+        type: aws_proxy
+
 components:
   schemas:
     integer:
@@ -120,3 +100,11 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+  securitySchemes:
+    ApiKeyAuth:
+      description: API KEY header
+      type: apiKey
+      in: header
+      name: x-api-key
+security:
+  - ApiKeyAuth: []

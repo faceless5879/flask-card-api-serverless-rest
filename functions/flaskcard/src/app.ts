@@ -12,7 +12,6 @@ export function configureApp(): Express {
   app.use(cors());
   app.use(express.urlencoded({ extended: false }));
   app.use(express.json());
-
   app.use(timeout('10m'));
 
   /** Rules of the API */
@@ -23,9 +22,6 @@ export function configureApp(): Express {
   app.use((req: Request, res: Response, next: NextFunction) => {
     //NOTHING NOW
     next();
-  });
-  app.use(`/`, async (req: Request, res: Response): Promise<void> => {
-    res.status(200).send({ message: 'Hello World' });
   });
   app.use(`/card`, cardRoutes.router);
 
